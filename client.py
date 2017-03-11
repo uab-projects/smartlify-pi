@@ -5,26 +5,25 @@ import netifaces as ni
 import struct
 
 # Constants
-if len(sys.argv) == 1:
+if len(sys.argv) <= 1:
     INTERFACE_DRON = "wlan0"
 else:
     INTERFACE_DRON = sys.argv[1]
+if len(sys.argv) <= 2:
+    IP_SERVER = "192.168.2.200"
+else:
+    IP_SERVER = sys.argv[2]
 SERVER_PORT = 7000
 
 # Welcome
 print("Welcome to Raspberry WiFi notifier for drones [CLIENT]")
 print("Interface for drone is %s" % (INTERFACE_DRON))
 
-# Get IP
-interface_dron_addrs = ni.ifaddresses(INTERFACE_DRON)
-interface_dron_ip = interface_dron_addrs[2][0]['addr']
-print("Address in the drone interface: %s" % interface_dron_ip)
-
-# Set server
+# Set client
 print("Creating socket")
 s = socket(AF_INET, SOCK_STREAM)
 print("Connecting socket")
-s.connect((interface_dron_ip, SERVER_PORT))
+s.connect((IP_SERVER, SERVER_PORT))
 # Socket connected
 print("Connected to socket, sending request for wifis")
 # Ask for something

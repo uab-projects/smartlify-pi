@@ -3,6 +3,7 @@ import sys
 from socket import *
 import netifaces as ni
 import struct
+from helpers import bytes_to_hex
 
 # Constants
 if len(sys.argv) == 1:
@@ -36,8 +37,8 @@ try:
     while not closed_con:
         print("Waiting for opcode")
         opcode = conn.recv(1)
-        opcode_hex = opcode.hex()
-        print("Received opcode: %s", opcode_hex)
+        opcode_hex = bytes_to_hex(opcode)
+        print("Received opcode: %s" % opcode_hex)
         if opcode_hex == "00":
             reply = struct.pack("Q", 1000)
             conn.sendall(reply)
