@@ -4,6 +4,7 @@ from socket import *
 import netifaces as ni
 import struct
 from helpers import bytes_to_hex
+from wmod import scanwifi
 import multiprocessing
 
 # Constants
@@ -42,7 +43,8 @@ def handle_connection(conn, addr):
             print("[%s] Received opcode: %s" % (addr_str, opcode_hex))
             if opcode_hex == "00":
                 print("[%s] OPCODE is WIFI REQ" % addr_str)
-                reply = struct.pack("Q", 1000)
+                wif = scanwifi()
+                reply = struct.pack("Q"+str(len(wif))+"s", len(wif), wif)
                 print("[%s] Sending reply" % addr_str)
                 conn.sendall(reply)
             elif opcode_hex == "ff" or opcode_hex == "":
