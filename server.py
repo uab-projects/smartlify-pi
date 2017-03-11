@@ -18,8 +18,7 @@ SERVER_PORT = 7000
 f = open("/home/pi/Documents/uCode/hiberus/log.txt", "a")
 f.write("Welcome to Raspberry WiFi notifier for drones [SERVER] \n")
 f.flush()
-f.flush()
-f.write("Interface for drone is %s \n" % (INTERFACE_DRON))
+f.write("Interface for drone is %s\n" % (INTERFACE_DRON))
 f.flush()
 
 # Get IP
@@ -43,7 +42,7 @@ def handle_connection(conn, addr):
     f.write(addr_str)
     f.flush()
     try:
-        f.write("Device connected \n", addr_str)
+        f.write("Device connected %s \n" % addr_str)
         f.flush()
         while not closed_con:
             f.write("[%s] Waiting for opcode \n" % addr_str)
