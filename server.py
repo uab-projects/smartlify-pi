@@ -1,108 +1,132 @@
+"""
+Basic server that will run in a Raspberry Pi that will allow to communicate
+information to a remote host (in this case an Android application)
+
+Usage:
+    python -m server <BIND_INTERFACE>
+
+Runs a multithreaded server that will listen for TCP clients and serve them
+in parallel using multiple threads and following the established protocol
+"""
 # Libraries
 import sys
 from socket import *
 import netifaces as ni
 import struct
+from common import OP_CLOSE, OP_WIFI_REQ, PORT
 from helpers import bytes_to_hex
 from wmod import scanwifi
 import multiprocessing
 
 # Constants
-if len(sys.argv) == 1:
-    INTERFACE_DRON = "wlan0"
-else:
-    INTERFACE_DRON = sys.argv[1]
-SERVER_PORT = 7000
+INTERFACE_DRONE = "wlan0" if len(sys.argv) <= 1 else sys.argv[1]
+"""
+    str: interface to bind the server to
+"""
+INTERFACE_SCAN = "wlan1"
+"""
+    str: interface to use to look for wifi networks
+"""
+LOG_FILE = open("/home/pi/Documents/uCode/hiberus/log.txt", "a")
+"""
+    file: file to append logs to
+"""
+
+
+# Methods
+def log(msg):
+    """
+    Logs the given message, depending on the implementation will log to the
+    console or to a file, etc...
+    """
+    LOG_FILE.write(msg + "\n")
+    LOG_FILE.flush()
+
 
 # Welcome
-f = open("/home/pi/Documents/uCode/hiberus/log.txt", "a")
-f.write("Welcome to Raspberry WiFi notifier for drones [SERVER] \n")
-f.flush()
-f.write("Interface for drone is %s\n" % (INTERFACE_DRON))
-f.flush()
+log("Welcome to Raspberry WiFi notifier for drones [SERVER]")
+log("Interface for drone is %s" % (INTERFACE_DRONE))
 
-# Get IP
-interface_dron_addrs = ni.ifaddresses(INTERFACE_DRON)
+# Get IP to bind
+interface_dron_addrs = ni.ifaddresses(INTERFACE_DRONE)
 interface_dron_ip = interface_dron_addrs[2][0]['addr']
-f.write("Address in the drone interface: %s \n" % interface_dron_ip)
-f.flush()
+log("Address in the drone interface: %s" % interface_dron_ip)
 
 # Set server
-f.write("Creating socket \n")
-f.flush()
+log("Creating socket")
 s = socket(AF_INET, SOCK_STREAM)
-f.write("Binding socket \n")
-f.flush()
-s.bind((interface_dron_ip, SERVER_PORT))
+log("Binding socket")
+s.bind((interface_dron_ip, PORT))
 
 
-def handle_connection(conn, addr):
+def handle_connection(conn, endpoint):
+    """
+    Given a connection identified by the connection object and endpoint tuple
+    (IP and port), handles the connection according to the protocol until a
+    close command is received or the communication is closed
+    """
     closed_con = False
-    addr_str = str(addr)
-    f.write(addr_str)
-    f.flush()
+    endpoint_str = str(endpoint)
+    log(endpoint_str)
     try:
-        f.write("Device connected %s \n" % addr_str)
-        f.flush()
+        log("Device connected %s" % endpoint_str)
         while not closed_con:
-            f.write("[%s] Waiting for opcode \n" % addr_str)
-            f.flush()
+            # Receive opcode
+            log("[%s] Waiting for opcode" % endpoint_str)
             opcode = conn.recv(1)
-            opcode_hex = bytes_to_hex(opcode)
-            f.write("[%s] Received opcode: %s \n" % (addr_str, opcode_hex))
-            f.flush()
-            if opcode_hex == "00":
-                f.write("[%s] OPCODE is WIFI REQ \n" % addr_str)
-                f.flush()
-                wif = scanwifi("wlan1")
+            log("[%s] Received opcode: %s" % (endpoint_str,
+                bytes_to_hex(opcode)))
+            # Switch opcode
+            if opcode == OP_WIFI_REQ:
+                # Serve wifi networks
+                log("[%s] OPCODE is WIFI REQ" % endpoint_str)
+                wif = scanwifi(INTERFACE_SCAN)
                 reply = struct.pack("Q"+str(len(wif))+"s", len(wif), wif)
-                f.write("[%s] Sending reply \n" % addr_str)
-                f.flush()
+                log("[%s] Sending reply" % endpoint_str)
                 conn.sendall(reply)
-            elif opcode_hex == "ff" or opcode_hex == "":
+            elif opcode == OP_CLOSE or opcode == bytes():
+                # Close connection
                 if opcode == "":
-                    f.write("[%s] No more data \n" % addr_str)
-                    f.flush()
+                    log("[%s] No more data" % endpoint_str)
                 else:
-                    f.write("[%s] OPCODE is close \n" % addr_str)
-                    f.flush()
+                    log("[%s] OPCODE is close" % endpoint_str)
                 conn.close()
                 closed_con = True
-                f.write("[%s] Closed connection \n" % addr_str)
-                f.flush()
+                log("[%s] Closed connection" % endpoint_str)
     except Exception as e:
-        f.write("[%s] Exception occurred %s \n" % (addr_str, str(e)))
-        f.flush()
+        log("[%s] Exception occurred %s" % (endpoint_str, str(e)))
     finally:
+        # Close if exception occurs
         if not closed_con:
-            f.write("[%s] Client exited before expected \n" % addr_str)
-            f.flush()
+            log("[%s] Client exited before expected" % endpoint_str)
             conn.close()
             closed_con = True
-            f.write("[%s] Closed connection \n" % addr_str)
-            f.flush()
+            log("[%s] Closed connection" % endpoint_str)
+    return endpoint_str
 
 
 def connection_handled_ok(res):
-    f.write("connection was handled properly \n")
-    f.flush()
+    """
+    Callback to execute when a connection has been handled succesfully
+    """
+    log("Connection was handled properly: %s" % str(res))
 
 
 def connection_handled_fail(exc):
-    f.write("connection was unable to be handled \n")
-    f.flush()
+    """
+    Callback to execute when a connection has been handled with an error
+    """
+    log("Connection was unable to be handled: %s" % str(exc))
 
 
 # Listen for connections
-f.write("Creating thread pool \n")
-f.flush()
+log("Creating thread pool")
 pool = multiprocessing.Pool()
 while True:
-    f.write("Listening")
-    f.flush()
-    s.listen(1)
-    f.write("Waiting for connections \n")
-    f.flush()
+    log("Listening")
+    s.listen(0)
+    log("Waiting for connections")
     pool.apply_async(handle_connection,  s.accept(), {}, connection_handled_ok,
                      connection_handled_fail)
-f.close()
+# Close log file
+LOG_FILE.close()
