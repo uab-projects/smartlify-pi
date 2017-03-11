@@ -36,7 +36,9 @@ for i in range(TESTS_NUMBER):
     size_response = s.recv(8)
     size_json = struct.unpack("Q", size_response)[0]
     print("I'll receive a JSON of size %d" % size_json)
-    input()
+    json = s.recv(size_json)
+    print("Received JSON is")
+    print(json)
     # Close connection
     s.send(bytes().fromhex("ff"))
     s.close()
