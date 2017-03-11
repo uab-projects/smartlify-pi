@@ -15,70 +15,95 @@ else:
 SERVER_PORT = 7000
 
 # Welcome
-print("Welcome to Raspberry WiFi notifier for drones [SERVER]")
-print("Interface for drone is %s" % (INTERFACE_DRON))
+f = open("/home/pi/Documents/uCode/hiberus/log.txt", "a")
+f.write("Welcome to Raspberry WiFi notifier for drones [SERVER] \n")
+f.flush()
+f.flush()
+f.write("Interface for drone is %s \n" % (INTERFACE_DRON))
+f.flush()
 
 # Get IP
 interface_dron_addrs = ni.ifaddresses(INTERFACE_DRON)
 interface_dron_ip = interface_dron_addrs[2][0]['addr']
-print("Address in the drone interface: %s" % interface_dron_ip)
+f.write("Address in the drone interface: %s \n" % interface_dron_ip)
+f.flush()
 
 # Set server
-print("Creating socket")
+f.write("Creating socket \n")
+f.flush()
 s = socket(AF_INET, SOCK_STREAM)
-print("Binding socket")
+f.write("Binding socket \n")
+f.flush()
 s.bind((interface_dron_ip, SERVER_PORT))
 
 
 def handle_connection(conn, addr):
     closed_con = False
     addr_str = str(addr)
-    print(addr_str)
+    f.write(addr_str)
+    f.flush()
     try:
-        print("Device connected", addr_str)
+        f.write("Device connected \n", addr_str)
+        f.flush()
         while not closed_con:
-            print("[%s] Waiting for opcode" % addr_str)
+            f.write("[%s] Waiting for opcode \n" % addr_str)
+            f.flush()
             opcode = conn.recv(1)
             opcode_hex = bytes_to_hex(opcode)
-            print("[%s] Received opcode: %s" % (addr_str, opcode_hex))
+            f.write("[%s] Received opcode: %s \n" % (addr_str, opcode_hex))
+            f.flush()
             if opcode_hex == "00":
-                print("[%s] OPCODE is WIFI REQ" % addr_str)
+                f.write("[%s] OPCODE is WIFI REQ \n" % addr_str)
+                f.flush()
                 wif = scanwifi("wlan1")
                 reply = struct.pack("Q"+str(len(wif))+"s", len(wif), wif)
-                print("[%s] Sending reply" % addr_str)
+                f.write("[%s] Sending reply \n" % addr_str)
+                f.flush()
                 conn.sendall(reply)
             elif opcode_hex == "ff" or opcode_hex == "":
                 if opcode == "":
-                    print("[%s] No more data" % addr_str)
+                    f.write("[%s] No more data \n" % addr_str)
+                    f.flush()
                 else:
-                    print("[%s] OPCODE is close" % addr_str)
+                    f.write("[%s] OPCODE is close \n" % addr_str)
+                    f.flush()
                 conn.close()
                 closed_con = True
-                print("[%s] Closed connection" % addr_str)
+                f.write("[%s] Closed connection \n" % addr_str)
+                f.flush()
     except Exception as e:
-        print("[%s] Exception occurred %s" % (addr_str, str(e)))
+        f.write("[%s] Exception occurred %s \n" % (addr_str, str(e)))
+        f.flush()
     finally:
         if not closed_con:
-            print("[%s] Client exited before expected" % addr_str)
+            f.write("[%s] Client exited before expected \n" % addr_str)
+            f.flush()
             conn.close()
             closed_con = True
-            print("[%s] Closed connection" % addr_str)
+            f.write("[%s] Closed connection \n" % addr_str)
+            f.flush()
 
 
 def connection_handled_ok(res):
-    print("connection was handled properly")
+    f.write("connection was handled properly \n")
+    f.flush()
 
 
 def connection_handled_fail(exc):
-    print("connection was unable to be handled")
+    f.write("connection was unable to be handled \n")
+    f.flush()
 
 
 # Listen for connections
-print("Creating thread pool")
+f.write("Creating thread pool \n")
+f.flush()
 pool = multiprocessing.Pool()
 while True:
-    print("Listening")
+    f.write("Listening")
+    f.flush()
     s.listen(1)
-    print("Waiting for connections")
+    f.write("Waiting for connections \n")
+    f.flush()
     pool.apply_async(handle_connection,  s.accept(), {}, connection_handled_ok,
                      connection_handled_fail)
+f.close()
