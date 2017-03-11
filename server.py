@@ -4,6 +4,7 @@ from socket import *
 import netifaces as ni
 import struct
 from helpers import bytes_to_hex
+import multiprocessing
 
 # Constants
 if len(sys.argv) == 1:
@@ -26,38 +27,56 @@ print("Creating socket")
 s = socket(AF_INET, SOCK_STREAM)
 print("Binding socket")
 s.bind((interface_dron_ip, SERVER_PORT))
-# Listen for connections
-while True:
+
+
+def handle_connection(conn, addr):
+    closed_con = False
+    addr_str = str(addr)
+    print(addr_str)
     try:
-        closed_con = False
-        print("Listenining")
-        s.listen(1)
-        print("Waiting for connections")
-        conn, addr = s.accept()
-        print("Device connected", addr)
+        print("Device connected", addr_str)
         while not closed_con:
-            print("Waiting for opcode")
+            print("[%s] Waiting for opcode" % addr_str)
             opcode = conn.recv(1)
             opcode_hex = bytes_to_hex(opcode)
-            print("Received opcode: %s" % opcode_hex)
+            print("[%s] Received opcode: %s" % (addr_str, opcode_hex))
             if opcode_hex == "00":
-                print("OPCODE is WIFI REQ")
+                print("[%s] OPCODE is WIFI REQ" % addr_str)
                 reply = struct.pack("Q", 1000)
-                print("Sending reply")
+                print("[%s] Sending reply" % addr_str)
                 conn.sendall(reply)
             elif opcode_hex == "ff" or opcode_hex == "":
                 if opcode == "":
-                    print("No more data")
+                    print("[%s] No more data" % addr_str)
                 else:
-                    print("OPCODE is close")
+                    print("[%s] OPCODE is close" % addr_str)
                 conn.close()
                 closed_con = True
-                print("Closed connection")
+                print("[%s] Closed connection" % addr_str)
     except Exception as e:
-        print("Exception occurred %s" % str(e))
+        print("[%s] Exception occurred %s" % (addr_str, str(e)))
     finally:
         if not closed_con:
-            print("Client exited before expected")
+            print("[%s] Client exited before expected" % addr_str)
             conn.close()
             closed_con = True
-            print("Closed connection")
+            print("[%s] Closed connection" % addr_str)
+
+
+def connection_handled_ok(res):
+    print("connection was handled properly")
+
+
+def connection_handled_fail(exc):
+    print("connection was unable to be handled")
+
+
+# Listen for connections
+print("Creating thread pool")
+pool = multiprocessing.Pool()
+while True:
+    print("Listening")
+    s.listen(1)
+    print("Waiting for connections")
+    pool.apply_async(handle_connection,  s.accept(), {}, connection_handled_ok,
+                     connection_handled_fail)
