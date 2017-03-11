@@ -11,6 +11,6 @@ That feature will allow the user to interact  with its environment smarter,
 searching for the better hotspot, or the worst if wants to isolate him.
 
 The client server module is coded in Python 3.4 and the Android app (that can
-be located here[] ) is coded in Java.
+be located [here](https://github.com/cgardev/DroneClient) ) is coded in Java.
 
 <> with ❤ by ccebrecos, davidlj95, cgardev and persicris.
