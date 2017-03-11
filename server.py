@@ -26,25 +26,38 @@ print("Creating socket")
 s = socket(AF_INET, SOCK_STREAM)
 print("Binding socket")
 s.bind((interface_dron_ip, SERVER_PORT))
-closed_con = False
 # Listen for connections
-try:
-    print("Listenining")
-    s.listen(1)
-    print("Waiting for connections")
-    conn, addr = s.accept()
-    print("Device connected", addr)
-    while not closed_con:
-        print("Waiting for opcode")
-        opcode = conn.recv(1)
-        opcode_hex = bytes_to_hex(opcode)
-        print("Received opcode: %s" % opcode_hex)
-        if opcode_hex == "00":
-            reply = struct.pack("Q", 1000)
-            conn.sendall(reply)
-        elif opcode_hex == "ff":
+while True:
+    try:
+        closed_con = False
+        print("Listenining")
+        s.listen(1)
+        print("Waiting for connections")
+        conn, addr = s.accept()
+        print("Device connected", addr)
+        while not closed_con:
+            print("Waiting for opcode")
+            opcode = conn.recv(1)
+            opcode_hex = bytes_to_hex(opcode)
+            print("Received opcode: %s" % opcode_hex)
+            if opcode_hex == "00":
+                print("OPCODE is WIFI REQ")
+                reply = struct.pack("Q", 1000)
+                print("Sending reply")
+                conn.sendall(reply)
+            elif opcode_hex == "ff" or opcode_hex == "":
+                if opcode == "":
+                    print("No more data")
+                else:
+                    print("OPCODE is close")
+                conn.close()
+                closed_con = True
+                print("Closed connection")
+    except Exception as e:
+        print("Exception occurred %s" % str(e))
+    finally:
+        if not closed_con:
+            print("Client exited before expected")
             conn.close()
             closed_con = True
-finally:
-    if not closed_con:
-        conn.close()
+            print("Closed connection")
