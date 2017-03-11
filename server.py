@@ -43,7 +43,7 @@ def handle_connection(conn, addr):
             print("[%s] Received opcode: %s" % (addr_str, opcode_hex))
             if opcode_hex == "00":
                 print("[%s] OPCODE is WIFI REQ" % addr_str)
-                wif = scanwifi()
+                wif = scanwifi("wlan1")
                 reply = struct.pack("Q"+str(len(wif))+"s", len(wif), wif)
                 print("[%s] Sending reply" % addr_str)
                 conn.sendall(reply)

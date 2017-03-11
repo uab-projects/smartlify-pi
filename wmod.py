@@ -1,9 +1,9 @@
 from wifi import Cell, Scheme
 import json
 
-def scanwifi():
+def scanwifi(interface):
 
-	cells = list(Cell.all('wlan1'))
+	cells = list(Cell.all(interface))
 	data = {}
 
 	for cell in cells:
