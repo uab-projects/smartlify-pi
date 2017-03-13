@@ -38,6 +38,6 @@ Client and server modules to communicate the Raspberry Pi attached to the drone 
 
 ### Android application
 The Android app that controls the drone and displays the found wireless access points can be found here:
-<center>[https://github.com/cgardev/DroneClient](https://github.com/cgardev/DroneClient)</center>
+[Smartlify App](https://github.com/uab-projects/smartlify-app)</center>
 
 <> with ❤ by [ccebrecos](https://github.com/ccebrecos), [davidlj95](https://github.com/davidlj95), [cgardev](https://github.com/cgardev) and [persicris](https://github.com/persicris).
